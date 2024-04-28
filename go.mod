@@ -1,4 +1,4 @@
-module github.com/konstantinwirz/kubectl-port-multi-forward
+module github.com/konstantinwirz/kubectl-portforward
 
 go 1.22.2
 

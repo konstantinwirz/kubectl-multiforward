@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-kubectl-port-multi-forward
+kubectl-portforward
 
 # Test binary, built with `go test -c`
 *.test
