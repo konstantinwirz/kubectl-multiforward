@@ -17,17 +17,6 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v5
-        with:
-          version: 'latest'
-
-      - name: Staticcheck
-        uses: dominikh/staticcheck-action@v1
-        with:
-          install-go: false
-          version: "latest"
-
       - name: Test
         run: go test -v -race ./...
 

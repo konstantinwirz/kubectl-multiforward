@@ -57,7 +57,7 @@ func (f Forwarder) Start(wg *sync.WaitGroup, poder Poder, resultsChan chan<- For
 
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", poder.Namespace(), pod)
 
-	hostIP := strings.TrimLeft(f.k8sConfig.Host, "https:/")
+	hostIP := strings.TrimLeft(f.k8sConfig.Host, "htps:/")
 	serverURL := url.URL{Scheme: "https", Host: hostIP, Path: path}
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
