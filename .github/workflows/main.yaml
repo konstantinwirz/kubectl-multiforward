@@ -1,0 +1,37 @@
+name: Build
+on: push
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: './go.mod'
+
+      - name: Install golint
+        run: go get -v -u golang.org/x/lint/golint
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Lint
+        run: golint -set_exit_status ./...
+
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          install-go: false
+          version: "latest"
+
+      - name: Test
+        run: go test -v -race ./...
+
+      - name: Build
+        run: go build
