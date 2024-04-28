@@ -14,14 +14,13 @@ jobs:
         with:
           go-version-file: './go.mod'
 
-      - name: Install golint
-        run: go get -v -u golang.org/x/lint/golint
-
       - name: Vet
         run: go vet ./...
 
-      - name: Lint
-        run: golint -set_exit_status ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v5
+        with:
+          version: 'latest'
 
       - name: Staticcheck
         uses: dominikh/staticcheck-action@v1
