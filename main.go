@@ -96,15 +96,14 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-mainloop:
 	for {
 		select {
 		case <-c:
-			fmt.Println("sending stop signal to forwarder...")
+			fmt.Println("sending stop signal to all forwarders...")
 			close(stopChan)
 		case <-doneChan:
-			fmt.Printf("all forwarders stopped\n")
-			break mainloop
+			fmt.Printf("all forwarders finished, quit...\n")
+			os.Exit(0)
 		}
 	}
 }
