@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Forwarder struct {
@@ -119,7 +120,26 @@ func (f Forwarder) StartMany(poders []Poder, stopChan <-chan struct{}) (<-chan s
 					// restart the forwarder
 					err := f.Start(&wg, result.Source, resultsChan, targetStopChan)
 					if err != nil {
-						fmt.Printf("error restarting forwarder -> %s\n", err.Error())
+						fmt.Printf("error restarting forwarder, try it again in a loop -> %s\n", err.Error())
+
+						go func() {
+							t := time.NewTicker(5 * time.Second)
+							for {
+								select {
+								case <-stopChan:
+									fmt.Println("received stop signal, no more attempts to restart forwarder")
+									return
+								case <-t.C:
+									if err := f.Start(&wg, result.Source, resultsChan, targetStopChan); err == nil {
+										t.Stop()
+										wg.Add(1)
+										return
+									}
+									// just do it again until err == nil
+								}
+							}
+						}()
+
 					} else {
 						wg.Add(1)
 					}
