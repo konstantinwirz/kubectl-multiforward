@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"os/signal"
@@ -14,48 +14,46 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-type arrayFlags []string
+var version = "v0.5.0"
 
-// String implements flag.Value
-func (af *arrayFlags) String() string {
-	return strings.Join(*af, ", ")
-}
+func main() {
+	var namespace string
+	var kubeConfigPath string
 
-// Set implements flag.Value
-func (af *arrayFlags) Set(value string) error {
-	*af = append(*af, value)
-	return nil
-}
+	var rootCmd = &cobra.Command{
+		Use:   "kubectl-multiforward [flags] resource1 resource2 ... resourceN",
+		Short: "Port-Forward multiple k8s resources simultaneously",
+		Long: `
+Port-Forward multiple k8s resources simultaneously.
 
-var doc = `
-TODO: make it right!
-Forward one or more local ports to a pod.
+A resource is specified as [namespace/]type/name:localPort:remotePort.
 
- Use resource type/name such as deployment/mydeployment to select a pod. Resource type defaults to
-'pod' if omitted.
-`
+Following resource types can be forwarded:
+ - pods
+ - deployments
+ - services
+`,
+		Version: version,
+		Args:    cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			forward(args, namespace, kubeConfigPath)
+		},
+	}
 
-func init() {
+	flags := rootCmd.Flags()
+	flags.StringVarP(&namespace, "namespace", "n", "", "k8s namespace which will be used for all resources (if not set otherwise)")
+	flags.StringVarP(&kubeConfigPath, "kubeconfig", "k", filepath.Join(homedir.HomeDir(), ".kube", "config"), "path to kubeconfig file")
 
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "%s\n", doc)
-		flag.PrintDefaults()
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing root command: %s\n", err.Error())
+		os.Exit(1)
 	}
 }
 
-func main() {
-	var resources arrayFlags
-	var namespace string
-	var kubeConfigPath string
-	flag.Var(&resources, "resource", "resource [namespace/]type/name:localPort:remotePort")
-	flag.StringVar(&namespace, "namespace", "", "k8s namespace for all resources")
-	flag.StringVar(&kubeConfigPath, "kubeconfig", filepath.Join(homedir.HomeDir(), ".kube", "config"), "path to kubeconfig file")
-
-	flag.Parse()
-
+func forward(resources []string, namespace string, kubeConfigPath string) {
 	if len(resources) == 0 {
-		fmt.Fprintf(os.Stderr, "at least one resource must be specified\n")
-		os.Exit(1)
+		// cannot happen
+		panic("no resources specified")
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
@@ -87,7 +85,8 @@ func main() {
 	forwarder := NewForwarder(config)
 
 	stopChan := make(chan struct{})
-	doneChan, err := forwarder.StartMany(poder, stopChan)
+	reportChan := make(chan Report, len(poder)*10)
+	doneChan, err := forwarder.Forward(poder, stopChan, reportChan)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting forwarder: %s\n", err.Error())
 		os.Exit(1)
@@ -99,10 +98,12 @@ func main() {
 	for {
 		select {
 		case <-c:
-			fmt.Println("sending stop signal to all forwarders...")
+			NewReport(SeverityInfo, nil, "sending stop signal to all forwarders...").Dump()
 			close(stopChan)
+		case report := <-reportChan:
+			report.Dump()
 		case <-doneChan:
-			fmt.Printf("all forwarders finished, quit...\n")
+			NewReport(SeverityInfo, nil, "all forwarders finished, quit...").Dump()
 			os.Exit(0)
 		}
 	}

@@ -12,6 +12,7 @@ import (
 )
 
 type Poder interface {
+	fmt.Stringer
 	Pod() (string, error)
 	Namespace() string
 	Ports() []string
@@ -45,6 +46,10 @@ func (p podPoder) Pod() (string, error) {
 
 func (p podPoder) Ports() []string {
 	return p.ports
+}
+
+func (p podPoder) String() string {
+	return fmt.Sprintf("%s/%s", p.namespace, p.pod)
 }
 
 func NewPoder(config *rest.Config, resource Resource) Poder {
@@ -97,6 +102,10 @@ func (p servicePoder) Pod() (string, error) {
 	return PickRandomPod(p.k8sConfig, p.namespace, p.service, fetchPodsForService)
 }
 
+func (p servicePoder) String() string {
+	return fmt.Sprintf("%s/%s", p.namespace, p.service)
+}
+
 type deploymentPoder struct {
 	k8sConfig             *rest.Config
 	namespace, deployment string
@@ -115,6 +124,10 @@ func (p deploymentPoder) Namespace() string {
 
 func (p deploymentPoder) Ports() []string {
 	return p.ports
+}
+
+func (p deploymentPoder) String() string {
+	return fmt.Sprintf("%s/%s", p.namespace, p.deployment)
 }
 
 // fetchPodsForService gets all pods for a k8s service

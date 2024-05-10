@@ -3,6 +3,7 @@ module github.com/konstantinwirz/kubectl-multiforward
 go 1.22.2
 
 require (
+	github.com/spf13/cobra v1.8.0
 	k8s.io/apimachinery v0.30.0
 	k8s.io/client-go v0.30.0
 )
@@ -21,6 +22,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
