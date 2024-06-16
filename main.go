@@ -14,7 +14,11 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-var version = "v0.5.0"
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
 
 func main() {
 	var namespace string
@@ -33,7 +37,7 @@ Following resource types can be forwarded:
  - deployments
  - services
 `,
-		Version: version,
+		Version: fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
 		Args:    cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			forward(args, namespace, kubeConfigPath)
