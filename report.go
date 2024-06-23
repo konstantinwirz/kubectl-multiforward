@@ -3,17 +3,37 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Severity int
 
+var currentSeverity = SeverityInfo
+
 const (
 	SeverityTrace Severity = iota
 	SeverityDebug
+	SeverityInfo
 	SeverityWarning
 	SeverityError
-	SeverityInfo
 )
+
+func SeverityFromString(s string) (Severity, error) {
+	switch strings.ToLower(s) {
+	case "trace":
+		return SeverityTrace, nil
+	case "debug":
+		return SeverityDebug, nil
+	case "info":
+		return SeverityInfo, nil
+	case "warning":
+		return SeverityWarning, nil
+	case "error":
+		return SeverityError, nil
+	default:
+		return SeverityInfo, fmt.Errorf("unknown severity: %s", s)
+	}
+}
 
 func (s Severity) String() string {
 	switch s {
@@ -60,6 +80,10 @@ const Yellow = "\033[33m"
 const Cyan = "\033[36m"
 
 func (r Report) Dump() {
+	if r.Severity < currentSeverity {
+		return
+	}
+
 	switch r.Severity {
 	case SeverityInfo:
 		fmt.Println(Green + r.Message + Reset)
