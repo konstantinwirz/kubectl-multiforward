@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	// will be replaced by goreleaser (using ldflags)
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
@@ -23,6 +24,7 @@ var (
 func main() {
 	var namespace string
 	var kubeConfigPath string
+	var severity string
 
 	var rootCmd = &cobra.Command{
 		Use:   "kubectl-multiforward [flags] resource1 resource2 ... resourceN",
@@ -40,13 +42,14 @@ Following resource types can be forwarded:
 		Version: fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
 		Args:    cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			forward(args, namespace, kubeConfigPath)
+			forward(args, namespace, kubeConfigPath, severity)
 		},
 	}
 
 	flags := rootCmd.Flags()
 	flags.StringVarP(&namespace, "namespace", "n", "", "k8s namespace which will be used for all resources (if not set otherwise)")
 	flags.StringVarP(&kubeConfigPath, "kubeconfig", "k", filepath.Join(homedir.HomeDir(), ".kube", "config"), "path to kubeconfig file")
+	flags.StringVarP(&severity, "severity", "s", "info", "log severity (trace, debug, info, warning, error)")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error executing root command: %s\n", err.Error())
@@ -54,7 +57,7 @@ Following resource types can be forwarded:
 	}
 }
 
-func forward(resources []string, namespace string, kubeConfigPath string) {
+func forward(resources []string, namespace string, kubeConfigPath string, severity string) {
 	if len(resources) == 0 {
 		// cannot happen
 		panic("no resources specified")
@@ -71,6 +74,12 @@ func forward(resources []string, namespace string, kubeConfigPath string) {
 			fmt.Printf("couldn't determine default namespace, using 'default': %s\n", err.Error())
 			namespace = "default"
 		}
+	}
+
+	currentSeverity, err = SeverityFromString(severity)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error recognizing severity: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 	var poder []Poder
