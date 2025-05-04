@@ -12,5 +12,5 @@ $ go install github.com/konstantinwirz/kubectl-multiforward@latest
 ## Usage
 
 ```shell
-$ kubectl multiforward -resource longhorn-system/service/longhorn-frontend:8080:8000 -resource pihole/service/pihole-web:8081:80
+$ kubectl multiforward longhorn-system/service/longhorn-frontend:8080:8000 pihole/service/pihole-web:8081:80
 ```

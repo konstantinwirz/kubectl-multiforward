@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
@@ -77,11 +78,12 @@ func (f Forwarder) forwardSingle(
 	out, errOut := new(bytes.Buffer), new(bytes.Buffer)
 
 	oldRuntimeErrorHandlers := runtime.ErrorHandlers
-	runtime.ErrorHandlers = []func(error){
-		func(err error) {
-			reportChan <- NewReport(SeverityError, poder, err.Error())
+	runtime.ErrorHandlers = []runtime.ErrorHandler{
+		func(_ context.Context, err error, _ string, _ ...interface{}) {
+			reportChan <- NewReport(SeverityError, poder, "%s", err.Error())
 		},
 	}
+
 	if len(oldRuntimeErrorHandlers) >= 2 {
 		runtime.ErrorHandlers = append(runtime.ErrorHandlers, oldRuntimeErrorHandlers[1])
 	}
@@ -96,11 +98,11 @@ func (f Forwarder) forwardSingle(
 		<-readyChan
 
 		if len(errOut.String()) != 0 {
-			reportChan <- NewReport(SeverityError, poder, strings.TrimSpace(strings.ReplaceAll(out.String(), "\n", "; ")))
+			reportChan <- NewReport(SeverityError, poder, "%s", strings.TrimSpace(strings.ReplaceAll(out.String(), "\n", "; ")))
 		}
 
 		if len(out.String()) != 0 {
-			reportChan <- NewReport(SeverityInfo, poder, strings.TrimSpace(strings.ReplaceAll(out.String(), "\n", "; ")))
+			reportChan <- NewReport(SeverityInfo, poder, "%s", strings.TrimSpace(strings.ReplaceAll(out.String(), "\n", "; ")))
 		}
 	}()
 
