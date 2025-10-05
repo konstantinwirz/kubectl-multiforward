@@ -162,7 +162,6 @@ func fetchPodsForService(config *rest.Config, namespace, service string) ([]stri
 
 	var pods []string
 	for _, pod := range podList.Items {
-		fmt.Println(pod.Name)
 		pods = append(pods, pod.Name)
 	}
 
