@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"math/rand"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -137,18 +138,32 @@ func fetchPodsForService(config *rest.Config, namespace, service string) ([]stri
 		return nil, fmt.Errorf("error creating k8s clientset: %w", err)
 	}
 
-	endpoints, err := clientset.CoreV1().Endpoints(namespace).Get(context.Background(), service, metav1.GetOptions{})
+	svc, err := clientset.CoreV1().Services(namespace).Get(context.Background(), service, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error getting endpoints: %w", err)
+		return nil, fmt.Errorf("error finding service: %s/%s: %w", namespace, service, err)
+	}
+
+	if len(svc.Spec.Selector) <= 0 {
+		return nil, fmt.Errorf("error determining pods for service %s/%s, it has no selectors", namespace, service)
+	}
+
+	selector := metav1.FormatLabelSelector(
+		&metav1.LabelSelector{
+			MatchLabels: svc.Spec.Selector,
+		})
+
+	podList, err := clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: selector,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error fetching pods for service %s/%s: %w", namespace, service, err)
 	}
 
 	var pods []string
-	for _, subset := range endpoints.Subsets {
-		for _, addr := range subset.Addresses {
-			if addr.TargetRef != nil {
-				pods = append(pods, addr.TargetRef.Name)
-			}
-		}
+	for _, pod := range podList.Items {
+		fmt.Println(pod.Name)
+		pods = append(pods, pod.Name)
 	}
 
 	return pods, nil
